@@ -1,0 +1,6 @@
+{
+  "name": "Location Tracking Link Generator",
+  "description": "Create tracker links that capture and display the physical or IP-based locations of users who visit them.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

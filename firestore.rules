@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(creatorId) {
+      return (request.auth != null && request.auth.uid == creatorId) || (request.auth == null && creatorId.startsWith("guest_"));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    // Master Gate parent lookups
+    function getLink(linkId) {
+      return get(/databases/$(database)/documents/links/$(linkId));
+    }
+
+    function isLinkCreator(linkId) {
+      return isOwner(getLink(linkId).data.creatorId);
+    }
+
+    // Links Collection
+    match /links/{linkId} {
+      allow create: if isOwner(request.resource.data.creatorId)
+                    && isValidId(linkId)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.clicksCount == 0
+                    && request.resource.data.title is string && request.resource.data.title.size() <= 200
+                    && request.resource.data.destinationUrl is string && request.resource.data.destinationUrl.size() <= 2048;
+
+      allow get: if true; // Publicly readable so visits/redirect page can retrieve details
+
+      allow list: if isOwner(resource.data.creatorId);
+
+      allow update: if (
+        // Creator updating properties
+        (isOwner(resource.data.creatorId) && request.resource.data.creatorId == resource.data.creatorId
+         && request.resource.data.createdAt == resource.data.createdAt
+         && request.resource.data.title is string && request.resource.data.title.size() <= 200
+         && request.resource.data.destinationUrl is string && request.resource.data.destinationUrl.size() <= 2048
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'destinationUrl']))
+      ) || (
+        // Visitor incrementing clicksCount during redirect
+        (request.resource.data.creatorId == resource.data.creatorId
+         && request.resource.data.createdAt == resource.data.createdAt
+         && request.resource.data.title == resource.data.title
+         && request.resource.data.destinationUrl == resource.data.destinationUrl
+         && request.resource.data.clicksCount == resource.data.clicksCount + 1
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicksCount']))
+      );
+
+      allow delete: if isOwner(resource.data.creatorId);
+
+      // Visits Collection
+      match /visits/{visitId} {
+        allow create: if isValidId(visitId)
+                      && request.resource.data.linkId == linkId
+                      && request.resource.data.timestamp == request.time
+                      && request.resource.data.ip is string && request.resource.data.ip.size() <= 64
+                      && request.resource.data.country is string && request.resource.data.country.size() <= 128
+                      && request.resource.data.region is string && request.resource.data.region.size() <= 128
+                      && request.resource.data.city is string && request.resource.data.city.size() <= 128
+                      && (request.resource.data.latitude == null || request.resource.data.latitude is number)
+                      && (request.resource.data.longitude == null || request.resource.data.longitude is number)
+                      && (request.resource.data.accuracy == null || request.resource.data.accuracy is number)
+                      && request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 1024
+                      && request.resource.data.method is string && request.resource.data.method.size() <= 32;
+
+        allow get: if isLinkCreator(linkId);
+        allow list: if isLinkCreator(linkId);
+
+        allow update, delete: if false; // Append-only structure
+      }
+    }
+  }
+}

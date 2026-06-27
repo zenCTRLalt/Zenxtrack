@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "link": {
+      "title": "Tracking Link",
+      "description": "A customized URL that records visitor details before forwarding them.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique short identifier for the link."
+        },
+        "title": {
+          "type": "string",
+          "description": "Friendly name or title of the campaign."
+        },
+        "destinationUrl": {
+          "type": "string",
+          "description": "Target destination redirected after capture."
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "UID of the user who created the link."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the link was created."
+        },
+        "clicksCount": {
+          "type": "number",
+          "description": "Number of times the link was visited."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "destinationUrl",
+        "creatorId",
+        "createdAt",
+        "clicksCount"
+      ]
+    },
+    "visit": {
+      "title": "Visit Entry",
+      "description": "Information collected from a user opening a tracking link.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the visit record."
+        },
+        "linkId": {
+          "type": "string",
+          "description": "ID of the tracking link visited."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of visitor entry."
+        },
+        "ip": {
+          "type": "string",
+          "description": "Public IP address of the browser."
+        },
+        "country": {
+          "type": "string",
+          "description": "Country name or code derived from IP lookup."
+        },
+        "region": {
+          "type": "string",
+          "description": "Region / State name."
+        },
+        "city": {
+          "type": "string",
+          "description": "City name."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Latitude estimated by IP or GPS tracker."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Longitude estimated by IP or GPS tracker."
+        },
+        "accuracy": {
+          "type": "number",
+          "description": "GPS accuracy in meters (null if IP-based)."
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "Browser User-Agent header information."
+        },
+        "method": {
+          "type": "string",
+          "description": "The capture method: IP or GPS."
+        }
+      },
+      "required": [
+        "id",
+        "linkId",
+        "timestamp",
+        "ip",
+        "country",
+        "userAgent",
+        "method"
+      ]
+    }
+  },
+  "firestore": {
+    "/links/{linkId}": {
+      "schema": "link",
+      "description": "Collection of generated tracking links."
+    },
+    "/links/{linkId}/visits/{visitId}": {
+      "schema": "visit",
+      "description": "Collection of recorded visits under a specific link."
+    }
+  }
+}
